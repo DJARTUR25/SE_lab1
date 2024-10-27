@@ -24,16 +24,21 @@ def get_type(vals):     # determines what type of equilibrium a given state has
   
   if np.all(real < 0) and np.all(imag == 0):    # if real parts of eigenvalues are less than 0 and imagine parts do not exist => stable node
     return "Stable node"
-  if np.all(real > 0) and np.all(imag == 0):    # if real parts of eigenvalues are more than 0 and imagine parts do not exist => unstable node
-    return "Unstable node"
-  if np.any (real < 0) and np.any (real > 0) and np.all(imag == 0):   # if real parts of a different signs and imagine parts do not exist => saddle
-    return "Saddle"
-  if np.all(real < 0) and np.all(imag != 0):    # if real parts of eigenvalues are less than 0 and imagine parts exists => stable focus
-    return "Stable focus"
-  if np.all(real > 0) and np.all(imag != 0):    # if real parts of eigenvalues are more than 0 and imagine parts exists => unstable focus
-    return "Unstable foсus"
-  if np.all(real == 0) and np.all(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
-    return "Center"
+  else:  
+    if np.all(real > 0) and np.all(imag == 0):    # if real parts of eigenvalues are more than 0 and imagine parts do not exist => unstable node
+      return "Unstable node"
+    else:
+      if np.any (real < 0) and np.any (real > 0) and np.all(imag == 0):   # if real parts of a different signs and imagine parts do not exist => saddle
+        return "Saddle"
+      else:
+        if np.all(real < 0) and np.all(imag != 0):    # if real parts of eigenvalues are less than 0 and imagine parts exists => stable focus
+          return "Stable focus"
+        else:
+          if np.all(real > 0) and np.all(imag != 0):    # if real parts of eigenvalues are more than 0 and imagine parts exists => unstable focus
+            return "Unstable foсus"
+          else:
+            if np.all(real == 0) and np.all(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
+              return "Center"
 
 
 def print_complex_numbers(num):
@@ -42,44 +47,66 @@ def print_complex_numbers(num):
       sign = '+'
     else:
       sign = '-'
-    return f"{num.real::2f} {sign} {abs(num.imag)::2f}i"
-  return f"{num::2f}"
+    return f"{num.real:f} {sign} {abs(num.imag):f}i"
+  else:
+    return f"{num:f}"
   
 
-def eq_quiver(rhs, limits, N=16):   # function creates the limits of linear limits
+def plot_phase_portrait(ax, rhs, alpha, beta, limits, fixed_point_color, trajectory_color):
   xlims, ylims = limits
+  ax.set_xlim(xlims)
+  ax.set_ylim(ylims)
+  ax.set_xlabel('X')
+  ax.set_ylabel("X'")
+
+  selfval, selfvect =  calc_eigvalues(alpha, beta)    # calculate eigvalues and eigvectors for this case
+  balance_type = get_type(selfval)
+  eq1 = print_complex_numbers(selfval[0])
+  eq2 = print_complex_numbers(selfval[1])
+  ax.set_title(f"This equation is: {balance_type}. Eigvalues is: λ1 = {eq1}; λ2 = {eq2}")    # and print them in terminal (I hope, for now)
+
+  N = 20
   xs = np.linspace(xlims[0], xlims[1], N)
   ys = np.linspace(ylims[0], ylims[1], N)
-  U = np.zeros((N,N))
-  V = np.zeros((N,N))
+  X, Y = np.meshgrid(xs, ys)
+  U, V = np.zeros_like(X), np.zeros_like(Y)
+  for i in range(N):
+    for j in range(N):
+      dx, dy = rhs(0, [X[i, j], Y[i, j]])
+      U[i, j] = dx
+      V[i, j] = dy
+  
+  # normalization
+  M = np.hypot(U,V)
+  M[M == 0] = 1
+  U = U / M
+  V = V / M
+  ax.quiver (X, Y, U, V, M, pivot = 'mid', cmap = 'gray', gamma = 0.8)
 
-  for i,y in enumerate(ys):
-    for j,x in enumerate(xs):
-      vfield = rhs(0.0, [x,y])
-      u, v = vfield
-      U[i][j] = u
-      V[i][j] = v
-
-  return xs, ys, U, V
-
-
-def plotonPlane(rhs, limits):   # function draws the phase plate
-  plt.close()
-  xlims, ylims = limits
-  plt.xlim(xlims[0], xlims[1])
-  plt.ylim(ylims[0], ylims[1])
-  xs, ys, U, V = eq_quiver(rhs, limits)
-  plt.quiver(xs, ys, U, V, alpha=0.8)
+  ax.plot(0, 0, 'o', color = fixed_point_color, markersize = 8, label = balance_type)
 
 
-alpha = 1.0     # main, makes the constants
-beta = 1.0
-rhs = f1(alpha, beta)
-plotonPlane(rhs, [(-5., 5.), (-5., 5.)])
-sol1 = solve_ivp(rhs, [0., 100.], (0., 4.), method='RK45', rtol=1e-12)
-x1, y1 = sol1.y
-plt.plot(x1,y1,'b-')
-sol2 = solve_ivp(rhs, [0., -100.], (0., 4.), method='RK45', rtol=1e-12)
-x2, y2 = sol2.y
-plt.plot(x2,y2,'b-')
+cases = [
+    {'alpha': 1.2, 'beta': 1.0, 'fixed_color': 'black', 'trajectory_color': 'blue'}, # УУ
+    {'alpha': -1.2, 'beta': 1.0, 'fixed_color': 'black', 'trajectory_color': 'red'}, # НУ
+    {'alpha': 1.0, 'beta': 2.0, 'fixed_color': 'black', 'trajectory_color': 'purple'}, # УФ
+    {'alpha': -1.0, 'beta': 2.0, 'fixed_color': 'black', 'trajectory_color': 'orange'}, # НФ
+    {'alpha': 0.0, 'beta': 1.0, 'fixed_color': 'black', 'trajectory_color': 'gray'},   # Ц
+    {'alpha': 0.5, 'beta': -0.5, 'fixed_color': 'black', 'trajectory_color': 'green'},  # С
+]
+
+#main 
+fig, axes = plt.subplots(1, 1, figsize=(12, 10))
+axes = axes.flatten()
+
+for idx, case in enumerate(cases):
+    ax = axes[idx]
+    rhs = f1(case['alpha'], case['beta'])
+    limits = [(-5, 5), (-5, 5)]
+    plot_phase_portrait(ax, rhs, case['alpha'], case['beta'], limits, fixed_point_color=case['fixed_color'], trajectory_color=case['trajectory_color'])
+
+
+
+
+plt.tight_layout()
 plt.show()
