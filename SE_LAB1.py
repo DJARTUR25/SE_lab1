@@ -3,19 +3,19 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 
 
-def f1(alpha, beta):    # function equal system of differenctional 
+def f1(delta, gamma):    # function equal system of differenctional 
   def rhs(t, X):
     x,y = X
     return [y, -(x**3) - (x**2) + 2*x]
   return rhs
 
 
-def jacobian(alpha, beta):    # function of matrix of Jacobi
-  return np.array([[0,1], [-alpha, -2*beta]])
+def jacobian(delta, gamma):    # function of matrix of Jacobi
+  return np.array([[0,1], [-delta, -2*gamma]])
 
 
-def calc_eigvalues (alpha, beta):     # function that calculating eigenvalues and eigenvectors 
-  vals, vectors = np.linalg.eig(jacobian(alpha,beta))
+def calc_eigvalues (delta, gamma):     # function that calculating eigenvalues and eigenvectors 
+  vals, vectors = np.linalg.eig(jacobian(delta,gamma))
   return vals, vectors
 
 def get_type(vals):     # determines what type of equilibrium a given state has
@@ -52,14 +52,14 @@ def print_complex_numbers(num):
     return f"{num:f}"
   
 
-def plot_phase_portrait(ax, rhs, alpha, beta, limits, fixed_point_color, trajectory_color):
+def plot_phase_portrait(ax, rhs, delta, gamma, limits, fixed_point_color, trajectory_color):
   xlims, ylims = limits
   ax.set_xlim(xlims)
   ax.set_ylim(ylims)
   ax.set_xlabel('X')
   ax.set_ylabel("X'")
 
-  selfval, selfvect =  calc_eigvalues(alpha, beta)    # calculate eigvalues and eigvectors for this case
+  selfval, selfvect =  calc_eigvalues(delta, gamma)    # calculate eigvalues and eigvectors for this case
   balance_type = get_type(selfval)
   eq1 = print_complex_numbers(selfval[0])
   eq2 = print_complex_numbers(selfval[1])
@@ -81,29 +81,29 @@ def plot_phase_portrait(ax, rhs, alpha, beta, limits, fixed_point_color, traject
   M[M == 0] = 1
   U = U / M
   V = V / M
-  ax.quiver (X, Y, U, V, M, pivot = 'mid', cmap = 'gray', gamma = 0.8)
+  ax.quiver (X, Y, U, V, M, pivot = 'mid', cmap = 'gray', alpha = 0.8)
 
   ax.plot(0, 0, 'o', color = fixed_point_color, markersize = 8, label = balance_type)
 
 
 cases = [
-    {'alpha': 1.2, 'beta': 1.0, 'fixed_color': 'black', 'trajectory_color': 'blue'}, # УУ
-    {'alpha': -1.2, 'beta': 1.0, 'fixed_color': 'black', 'trajectory_color': 'red'}, # НУ
-    {'alpha': 1.0, 'beta': 2.0, 'fixed_color': 'black', 'trajectory_color': 'purple'}, # УФ
-    {'alpha': -1.0, 'beta': 2.0, 'fixed_color': 'black', 'trajectory_color': 'orange'}, # НФ
-    {'alpha': 0.0, 'beta': 1.0, 'fixed_color': 'black', 'trajectory_color': 'gray'},   # Ц
-    {'alpha': 0.5, 'beta': -0.5, 'fixed_color': 'black', 'trajectory_color': 'green'},  # С
+    {'delta': 1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'blue'}, # УУ
+    {'delta': -1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'red'}, # НУ
+    {'delta': 1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'purple'}, # УФ
+    {'delta': -1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'orange'}, # НФ
+    {'delta': 0.0, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'gray'},   # Ц
+    {'delta': 0.5, 'gamma': -0.5, 'fixed_color': 'black', 'trajectory_color': 'green'},  # С
 ]
 
 #main 
-fig, axes = plt.subplots(1, 1, figsize=(12, 10))
+fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex=True, sharey=True) # figsize=(12, 10))
 axes = axes.flatten()
 
 for idx, case in enumerate(cases):
     ax = axes[idx]
-    rhs = f1(case['alpha'], case['beta'])
+    rhs = f1(case['delta'], case['gamma'])
     limits = [(-5, 5), (-5, 5)]
-    plot_phase_portrait(ax, rhs, case['alpha'], case['beta'], limits, fixed_point_color=case['fixed_color'], trajectory_color=case['trajectory_color'])
+    plot_phase_portrait(ax, rhs, case['delta'], case['gamma'], limits, fixed_point_color=case['fixed_color'], trajectory_color=case['trajectory_color'])
 
 
 
