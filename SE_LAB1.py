@@ -23,22 +23,17 @@ def get_type(vals):     # determines what type of equilibrium a given state has
   imag = vals.imag
   
   if np.all(real < 0) and np.all(imag == 0):    # if real parts of eigenvalues are less than 0 and imagine parts do not exist => stable node
-    return "Stable node"
-  else:  
-    if np.all(real > 0) and np.all(imag == 0):    # if real parts of eigenvalues are more than 0 and imagine parts do not exist => unstable node
-      return "Unstable node"
-    else:
-      if np.any (real < 0) and np.any (real > 0) and np.all(imag == 0):   # if real parts of a different signs and imagine parts do not exist => saddle
-        return "Saddle"
-      else:
-        if np.all(real < 0) and np.all(imag != 0):    # if real parts of eigenvalues are less than 0 and imagine parts exists => stable focus
-          return "Stable focus"
-        else:
-          if np.all(real > 0) and np.all(imag != 0):    # if real parts of eigenvalues are more than 0 and imagine parts exists => unstable focus
-            return "Unstable foсus"
-          else:
-            if np.all(real == 0) and np.all(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
-              return "Center"
+    return "Stable node" 
+  elif np.all(real > 0) and np.all(imag == 0):    # if real parts of eigenvalues are more than 0 and imagine parts do not exist => unstable node
+    return "Unstable node"
+  elif np.any (real < 0) and np.any (real > 0) and np.all(imag == 0):   # if real parts of a different signs and imagine parts do not exist => saddle
+    return "Saddle"
+  elif np.all(real < 0) and np.all(imag != 0):    # if real parts of eigenvalues are less than 0 and imagine parts exists => stable focus
+    return "Stable focus"
+  elif np.all(real > 0) and np.all(imag != 0):    # if real parts of eigenvalues are more than 0 and imagine parts exists => unstable focus
+    return "Unstable foсus"
+  elif np.any(np.isclose(real, 0.0)) and np.any(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
+    return "Center"
 
 
 def print_complex_numbers(num):
@@ -63,7 +58,7 @@ def plot_phase_portrait(ax, rhs, delta, gamma, limits, fixed_point_color, trajec
   balance_type = get_type(selfval)
   eq1 = print_complex_numbers(selfval[0])
   eq2 = print_complex_numbers(selfval[1])
-  ax.set_title(f"This equation is: {balance_type}. Eigvalues is: λ1 = {eq1}; λ2 = {eq2}")    # and print them in terminal (I hope, for now)
+  ax.set_title(f"{balance_type}.λ1={eq1};λ2={eq2}")    # and print them in terminal (I hope, for now)
 
   N = 20
   xs = np.linspace(xlims[0], xlims[1], N)
@@ -81,22 +76,22 @@ def plot_phase_portrait(ax, rhs, delta, gamma, limits, fixed_point_color, trajec
   M[M == 0] = 1
   U = U / M
   V = V / M
-  ax.quiver (X, Y, U, V, M, pivot = 'mid', cmap = 'gray', alpha = 0.8)
+  ax.quiver (X, Y, U, V, M, pivot = 'mid', cmap = 'gray', alpha = 0.4)
 
-  ax.plot(0, 0, 'o', color = fixed_point_color, markersize = 8, label = balance_type)
+  ax.plot(0, 0, 'o', color = fixed_point_color, markersize = 4, label = balance_type)
 
 
 cases = [
-    {'delta': 1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'blue'}, # УУ
-    {'delta': -1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'red'}, # НУ
-    {'delta': 1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'purple'}, # УФ
-    {'delta': -1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'orange'}, # НФ
-    {'delta': 0.0, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'gray'},   # Ц
-    {'delta': 0.5, 'gamma': -0.5, 'fixed_color': 'black', 'trajectory_color': 'green'},  # С
+    {'delta': 1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'blue'}, # stable node
+    {'delta': -1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'red'}, # unstable node
+    {'delta': 1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'purple'}, # stable focus
+    {'delta': -1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'orange'}, # unstable focus
+    {'delta': 0.0, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'gray'},   # center
+    {'delta': 0.5, 'gamma': -0.5, 'fixed_color': 'black', 'trajectory_color': 'green'},  # saddle
 ]
 
 #main 
-fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex=True, sharey=True) # figsize=(12, 10))
+fig, axes = plt.subplots(nrows = 6, ncols = 1, sharex=True, sharey=True) # figsize=(12, 10))
 axes = axes.flatten()
 
 for idx, case in enumerate(cases):
