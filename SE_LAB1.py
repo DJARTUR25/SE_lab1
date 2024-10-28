@@ -6,7 +6,7 @@ from scipy.integrate import solve_ivp
 def f1(delta, gamma):    # function equal system of differenctional 
   def rhs(t, X):
     x,y = X
-    return [y, -2*delta - x*gamma]
+    return [y, -2*delta*y - x*gamma]
   return rhs
 
 
@@ -32,7 +32,7 @@ def get_type(vals):     # determines what type of equilibrium a given state has
     return "Stable focus"
   elif np.all(real > 0) and np.all(imag != 0):    # if real parts of eigenvalues are more than 0 and imagine parts exists => unstable focus
     return "Unstable foсus"
-  elif np.any(np.isclose(real, 0.0)) and np.any(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
+  elif np.all(np.isclose(real, 0.0)) and np.all(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
     return "Center"
 
 
@@ -46,62 +46,77 @@ def print_complex_numbers(num):
   else:
     return f"{num:f}"
   
+def plot_phase_portrait(ax, rhs, delta, gamma, limits, point_color, traj_color):
+    xlims, ylims = limits
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
+    ax.set_xlabel('X')
+    ax.set_ylabel("Ẋ")
 
-def plot_phase_portrait(ax, rhs, delta, gamma, limits, fixed_point_color, trajectory_color):
-  xlims, ylims = limits
-  ax.set_xlim(xlims)
-  ax.set_ylim(ylims)
-  ax.set_xlabel('X')
-  ax.set_ylabel("X'")
+    eig_vals, eig_vecs = calc_eigvalues(delta, gamma)
+    eq_type = get_type(eig_vals)
 
-  selfval, selfvect =  calc_eigvalues(delta, gamma)    # calculate eigvalues and eigvectors for this case
-  balance_type = get_type(selfval)
-  eq1 = print_complex_numbers(selfval[0])
-  eq2 = print_complex_numbers(selfval[1])
-  ax.set_title(f"{balance_type}.λ1={eq1};λ2={eq2}")    # and print them in terminal (I hope, for now)
+    eig1_str = print_complex_numbers(eig_vals[0])
+    eig2_str = print_complex_numbers(eig_vals[1])
 
-  N = 20
-  xs = np.linspace(xlims[0], xlims[1], N)
-  ys = np.linspace(ylims[0], ylims[1], N)
-  X, Y = np.meshgrid(xs, ys)
-  U, V = np.zeros_like(X), np.zeros_like(Y)
-  for i in range(N):
-    for j in range(N):
-      dx, dy = rhs(0, [X[i, j], Y[i, j]])
-      U[i, j] = dx
-      V[i, j] = dy
-  
-  # normalization
-  M = np.hypot(U,V)
-  M[M == 0] = 1
-  U = U / M
-  V = V / M
-  ax.quiver (X, Y, U, V, M, pivot = 'mid', cmap = 'gray', alpha = 0.4)
+    ax.set_title(f"{eq_type}\nСобственные числа: λ₁={eig1_str}, λ₂={eig2_str}")
 
-  ax.plot(0, 0, 'o', color = fixed_point_color, markersize = 4, label = balance_type)
+    N = 20 
+    x = np.linspace(xlims[0], xlims[1], N)
+    y = np.linspace(ylims[0], ylims[1], N)
+    X, Y = np.meshgrid(x, y)
+    U, V = np.zeros_like(X), np.zeros_like(Y)
+    for i in range(N):
+        for j in range(N):
+            dx, dy = rhs(0, [X[i, j], Y[i, j]])
+            U[i, j] = dx
+            V[i, j] = dy
+    # Normalixation
+    M = np.hypot(U, V)
+    M[M == 0] = 1
+    U /= M
+    V /= M
+    ax.quiver(X, Y, U, V, M, pivot='mid', cmap='gray', alpha=0.4)
 
+    ax.plot(0, 0, 'o', color=point_color, markersize=5, label = eq_type)
+
+    initial_conditions = [
+        (3, 0), (-3, 0),
+        (0, 3), (0, -3),
+        (3, 3), (-3, 3),
+        (3, -3), (-3, -3)
+    ]
+    t_span = [0, 20]
+    for ic in initial_conditions:
+        # Траектории вперёд по времени
+        sol = solve_ivp(rhs, t_span, ic, dense_output=True, max_step=0.1)
+        ax.plot(sol.y[0], sol.y[1], color=traj_color, linewidth=1.5, alpha=0.9)
+        # Траектории назад по времени
+        sol_back = solve_ivp(rhs, [0, -20], ic, dense_output=True, max_step=0.1)
+        ax.plot(sol_back.y[0], sol_back.y[1], color=traj_color, linewidth=1.5, alpha=0.9)
+
+ 
+
+ # main function
 
 cases = [
-    {'delta': 1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'blue'}, # stable node
-    {'delta': -1.2, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'red'}, # unstable node
-    {'delta': 1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'purple'}, # stable focus
-    {'delta': -1.0, 'gamma': 2.0, 'fixed_color': 'black', 'trajectory_color': 'orange'}, # unstable focus
-    {'delta': 0.0, 'gamma': 1.0, 'fixed_color': 'black', 'trajectory_color': 'gray'},   # center
-    {'delta': 0.5, 'gamma': -0.5, 'fixed_color': 'black', 'trajectory_color': 'green'},  # saddle
+    {'delta': 1.2, 'gamma': 1.0, 'point_color': 'black', 'traj_color': 'blue'}, # УУ
+    {'delta': -1.2, 'gamma': 1.0, 'point_color': 'black', 'traj_color': 'red'}, # НУ
+    {'delta': 1.0, 'gamma': 2.0, 'point_color': 'black', 'traj_color': 'purple'}, # УФ
+    {'delta': -1.0, 'gamma': 2.0, 'point_color': 'black', 'traj_color': 'orange'}, # НФ
+    {'delta': 0.0, 'gamma': 1.0, 'point_color': 'black', 'traj_color': 'gray'},   # Ц
+    {'delta': 0.5, 'gamma': -0.5, 'point_color': 'black', 'traj_color': 'green'},  # С
 ]
 
-#main 
-fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex=True, sharey=True) # figsize=(12, 10))
-axes = axes.flatten()           # ?????
-                                # to normal view need to fullscreen the plot.
+fig, axes = plt.subplots(2, 3, figsize=(12, 10))
+axes = axes.flatten()
+
+
 for idx, case in enumerate(cases):
     ax = axes[idx]
     rhs = f1(case['delta'], case['gamma'])
     limits = [(-5, 5), (-5, 5)]
-    plot_phase_portrait(ax, rhs, case['delta'], case['gamma'], limits, fixed_point_color=case['fixed_color'], trajectory_color=case['trajectory_color'])
-
-
-
+    plot_phase_portrait(ax, rhs, case['delta'], case['gamma'], limits, point_color=case['point_color'], traj_color=case['traj_color'])
 
 plt.tight_layout()
 plt.show()
