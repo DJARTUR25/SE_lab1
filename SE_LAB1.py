@@ -6,7 +6,7 @@ from scipy.integrate import solve_ivp
 def f1(delta, gamma):    # function equal system of differenctional 
   def rhs(t, X):
     x,y = X
-    return [y, -(x**3) - (x**2) + 2*x]
+    return [y, -2*delta - x*gamma]
   return rhs
 
 
@@ -91,9 +91,9 @@ cases = [
 ]
 
 #main 
-fig, axes = plt.subplots(nrows = 6, ncols = 1, sharex=True, sharey=True) # figsize=(12, 10))
-axes = axes.flatten()
-
+fig, axes = plt.subplots(nrows = 2, ncols = 3, sharex=True, sharey=True) # figsize=(12, 10))
+axes = axes.flatten()           # ?????
+                                # to normal view need to fullscreen the plot.
 for idx, case in enumerate(cases):
     ax = axes[idx]
     rhs = f1(case['delta'], case['gamma'])
