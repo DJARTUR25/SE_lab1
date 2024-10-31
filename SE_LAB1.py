@@ -2,121 +2,136 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 
-
-def f1(delta, gamma):    # function equal system of differenctional 
+def f1(gamma):
   def rhs(t, X):
     x,y = X
-    return [y, -2*delta*y - x*gamma]
+    return [gamma + y , -x**3-x**2+2*x]
   return rhs
 
+def sobs(x, y):
 
-def jacobian(delta, gamma):    # function of matrix of Jacobi
-  return np.array([[0,1], [-delta, -2*gamma]])
+  J = np.array([[0, 1], [5*x**4-15*(x**2)+4, 0]])  # jacobian
 
+  lambdas, vectors = np.linalg.eig(J)
+  return lambdas, vectors  # eigvalues and eigvectors
 
-def calc_eigvalues (delta, gamma):     # function that calculating eigenvalues and eigenvectors 
-  vals, vectors = np.linalg.eig(jacobian(delta,gamma))
-  return vals, vectors
+def eq_quiver(rhs, limits, N=16):
+  xlims, ylims = limits
+  xs = np.linspace(xlims[0], xlims[1], N)
+  ys = np.linspace(ylims[0], ylims[1], N)
+  U = np.zeros((N,N))
+  V = np.zeros((N,N))
 
-def get_type(vals):     # determines what type of equilibrium a given state has
-  real = vals.real
-  imag = vals.imag
-  
-  if np.all(real < 0) and np.all(imag == 0):    # if real parts of eigenvalues are less than 0 and imagine parts do not exist => stable node
-    return "Stable node" 
-  elif np.all(real > 0) and np.all(imag == 0):    # if real parts of eigenvalues are more than 0 and imagine parts do not exist => unstable node
-    return "Unstable node"
-  elif np.any (real < 0) and np.any (real > 0) and np.all(imag == 0):   # if real parts of a different signs and imagine parts do not exist => saddle
-    return "Saddle"
-  elif np.all(real < 0) and np.all(imag != 0):    # if real parts of eigenvalues are less than 0 and imagine parts exists => stable focus
-    return "Stable focus"
-  elif np.all(real > 0) and np.all(imag != 0):    # if real parts of eigenvalues are more than 0 and imagine parts exists => unstable focus
-    return "Unstable foсus"
-  elif np.all(np.isclose(real, 0.0)) and np.all(imag != 0):   # if eigenvalues are purely imaginary => center (or difficult focus, more research is needed)
-    return "Center"
+  for i,y in enumerate(ys):
+    for j,x in enumerate(xs):
+      vfield = rhs(0., [x,y])
+      u,v = vfield
+      U[i][j] = u
+      V[i][j] = v
+  return xs, ys, U, V
 
 
-def print_complex_numbers(num):
-  if np.iscomplex(num):
-    if num.imag >= 0: 
-      sign = '+'
-    else:
-      sign = '-'
-    return f"{num.real:f} {sign} {abs(num.imag):f}i"
+def plot_separatrix(rhs, x, y):         # only one saddle => two separatrices
+  lambdas, vectors = sobs(x, y)
+  v1= vectors[:, 0]           # first eigvector
+  v2 = vectors[:, 1]          # second one
+  h = 0.01                    # step
+  t = [0, 10]                 # in time
+  t1 = [0, -10]               # againt time
+  print(v1)                   # print in terminal first eigvector
+
+  if ( v1[0] > 0 ) and ( v1[1] > 0 ):                                           # check, is the first element of eigvectors positive
+    sol1 = solve_ivp(rhs, t, [x, y] + (h*v1), method='RK45', rtol = 1e-12)      # start solution from point near start point offset in the direction of eigvector
+    x1, y1 = sol1.y                                                             # starting point
+    plt.plot(x1, y1, linestyle='--', color='red')                               # draws the separatrix from point (x1, y1); its view: --- and red color (because unstable)
   else:
-    return f"{num:f}"
-  
-def plot_phase_portrait(ax, rhs, delta, gamma, limits, point_color, traj_color):
-    xlims, ylims = limits
-    ax.set_xlim(xlims)
-    ax.set_ylim(ylims)
-    ax.set_xlabel('X')
-    ax.set_ylabel("Ẋ")
+    sol1 = solve_ivp (rhs, t, [x, y] - (h*v1), method='RK45', rtol = 1e-12)     # if 1st element negative:
+    x1, y1 = sol1.y
+    plt.plot(x1, y1, linestyle='--', color='red')
 
-    eig_vals, eig_vecs = calc_eigvalues(delta, gamma)
-    eq_type = get_type(eig_vals)
+  if ( v1[0] > 0 ) and ( v1[1] > 0 ):                                           # check, is the first element of eigvectors positive
+    sol2 = solve_ivp(rhs, t, [x, y] + (h*v1), method='RK45', rtol = 1e-12)      # start solution from point near start point offset in the direction of eigvector
+    x2, y2 = sol2.y                                                             # starting point
+    plt.plot(x2, y2, linestyle='--', color='red')                               # draws the separatrix from point (x1, y1); its view: --- and red color (because unstable)
+  else:
+    sol2 = solve_ivp (rhs, t, [x, y] - (h*v1), method='RK45', rtol = 1e-12)     # if 1st element negative:
+    x2, y2 = sol2.y
+    plt.plot(x2, y2, linestyle='--', color='red')
 
-    eig1_str = print_complex_numbers(eig_vals[0])
-    eig2_str = print_complex_numbers(eig_vals[1])
+  if (v2[0]>0 and v2[1]>0):                                                     # same actions, but for the 2nd eigvector
+    sol3 = solve_ivp (rhs, t1, [x, y] + (h*(v2)), method='RK45', rtol = 1e-12)
+    x3, y3 = sol3.y
+    plt.plot(x3, y3, linestyle='--', color='red')
+  else:
+    sol3 = solve_ivp (rhs, t1,[x, y] - (h*(v2)), method='RK45', rtol = 1e-12)
+    x3, y3 = sol3.y
+    plt.plot(x3, y3, linestyle='--', color='red')
 
-    ax.set_title(f"{eq_type}\nСобственные числа: λ₁={eig1_str}, λ₂={eig2_str}")
+  if (v2[0]>0 and v2[1]>0):
+    sol4 = solve_ivp (rhs, t1, [x, y] + (h*(-v2)), method='RK45', rtol = 1e-12)
+    x4, y4 = sol4.y
+    plt.plot(x4, y4, linestyle='--', color='red')
+  else:
+    sol4 = solve_ivp (rhs, t1,[x, y] - (h*(-v2)), method='RK45', rtol = 1e-12)
+    x4, y4 = sol4.y
+    plt.plot(x4, y4, linestyle='--', color='red')
 
-    N = 20 
-    x = np.linspace(xlims[0], xlims[1], N)
-    y = np.linspace(ylims[0], ylims[1], N)
-    X, Y = np.meshgrid(x, y)
-    U, V = np.zeros_like(X), np.zeros_like(Y)
-    for i in range(N):
-        for j in range(N):
-            dx, dy = rhs(0, [X[i, j], Y[i, j]])
-            U[i, j] = dx
-            V[i, j] = dy
-    # Normalixation
-    M = np.hypot(U, V)
-    M[M == 0] = 1
-    U /= M
-    V /= M
-    ax.quiver(X, Y, U, V, M, pivot='mid', cmap='gray', alpha=0.4)
-
-    ax.plot(0, 0, 'o', color=point_color, markersize=5, label = eq_type)
-
-    initial_conditions = [
-        (3, 0), (-3, 0),
-        (0, 3), (0, -3),
-        (3, 3), (-3, 3),
-        (3, -3), (-3, -3)
-    ]
-    t_span = [0, 20]
-    for ic in initial_conditions:
-        # Траектории вперёд по времени
-        sol = solve_ivp(rhs, t_span, ic, dense_output=True, max_step=0.1)
-        ax.plot(sol.y[0], sol.y[1], color=traj_color, linewidth=1.5, alpha=0.9)
-        # Траектории назад по времени
-        sol_back = solve_ivp(rhs, [0, -20], ic, dense_output=True, max_step=0.1)
-        ax.plot(sol_back.y[0], sol_back.y[1], color=traj_color, linewidth=1.5, alpha=0.9)
-
- 
-
- # main function
-
-cases = [
-    {'delta': 1.2, 'gamma': 1.0, 'point_color': 'black', 'traj_color': 'blue'}, # УУ
-    {'delta': -1.2, 'gamma': 1.0, 'point_color': 'black', 'traj_color': 'red'}, # НУ
-    {'delta': 1.0, 'gamma': 2.0, 'point_color': 'black', 'traj_color': 'purple'}, # УФ
-    {'delta': -1.0, 'gamma': 2.0, 'point_color': 'black', 'traj_color': 'orange'}, # НФ
-    {'delta': 0.0, 'gamma': 1.0, 'point_color': 'black', 'traj_color': 'gray'},   # Ц
-    {'delta': 0.5, 'gamma': -0.5, 'point_color': 'black', 'traj_color': 'green'},  # С
-]
-
-fig, axes = plt.subplots(2, 3, figsize=(12, 10))
-axes = axes.flatten()
+  return sol1, sol2, sol3, sol4
 
 
-for idx, case in enumerate(cases):
-    ax = axes[idx]
-    rhs = f1(case['delta'], case['gamma'])
-    limits = [(-5, 5), (-5, 5)]
-    plot_phase_portrait(ax, rhs, case['delta'], case['gamma'], limits, point_color=case['point_color'], traj_color=case['traj_color'])
 
-plt.tight_layout()
+def plot_plane(rhs, limits): # draws a vector field
+  plt.figure(figsize=(8, 6))
+  xlims, ylims = limits
+  plt.xlim(xlims[0], xlims[1])    # the borders of field in graphic
+  plt.ylim(ylims[0], ylims[1])
+  xs, ys, U, V = eq_quiver(rhs, limits)   # generation of coordinates x, y
+  plt.quiver(xs, ys, U, V, alpha = 0.8)
+
+
+
+# MAIN
+
+gamma = 0.
+rhs = f1(gamma)
+
+plot_plane(rhs, ([-4., 4.], [-4., 4.]))
+
+plt.scatter(-2, 0, color='black')
+plt.scatter(1, 0, color='black')
+plt.scatter(0, 0, color='red', marker = 'x')
+
+t = [0., 20.]
+t1 = [0., -20.]
+
+sol01 = solve_ivp (rhs, t, (-2.5, 0.), method='RK45', rtol = 1e-12)         # left center
+x01, y01 = sol01.y
+plt.plot(x01, y01, color = 'green')
+
+sol02 = solve_ivp (rhs, t, (1.2, 0.), method='RK45', rtol = 1e-12)          # right center
+x02, y02 = sol02.y
+plt.plot(x02, y02, color = 'green')
+
+sol03 = solve_ivp (rhs, t, (-2.65, 0.), method = 'RK45', rtol = 1e-12)      # one more trajectory for left center
+x03, y03 = sol03.y
+plt.plot(x03, y03, color = 'green')
+
+sol04 = solve_ivp (rhs, t, (1.4, 0.), method = 'RK45', rtol = 1e-12)      # one more trajectory for right center
+x04, y04 = sol04.y
+plt.plot(x04, y04, color = 'green')
+
+sol5 = solve_ivp (rhs, t, (3., 0.), method = 'RK45', rtol = 1e-12)        # added finite trajectories
+x5, y5 = sol5.y
+plt.plot(x5, y5, color = 'blue')
+
+sol6 = solve_ivp (rhs, t, (2., 0.), method = 'RK45', rtol = 1e-12)
+x6, y6 = sol6.y
+plt.plot(x6, y6, color = 'blue')
+
+sol7 = solve_ivp (rhs, t, (1.75, 0.), method = 'RK45', rtol = 1e-12)
+x7, y7 = sol7.y
+plt.plot(x7, y7, color = 'blue')
+
+sep1, sep2, sep3, sep4 = plot_separatrix(rhs, 0., 0.) # separatrices for central sadlle
+
 plt.show()
