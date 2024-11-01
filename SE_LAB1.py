@@ -8,12 +8,14 @@ def f1(gamma):
     return [gamma + y , -x**3-x**2+2*x]
   return rhs
 
-def sobs(x, y):
 
-  J = np.array([[0, 1], [5*x**4-15*(x**2)+4, 0]])  # jacobian
+def sobs(x, y, gamma):
+
+  J = np.array([[0, 1], [3*x**2+2*x, -gamma]])  # jacobian
 
   lambdas, vectors = np.linalg.eig(J)
   return lambdas, vectors  # eigvalues and eigvectors
+
 
 def eq_quiver(rhs, limits, N=16):
   xlims, ylims = limits
@@ -31,8 +33,8 @@ def eq_quiver(rhs, limits, N=16):
   return xs, ys, U, V
 
 
-def plot_separatrix(rhs, x, y):         # only one saddle => two separatrices
-  lambdas, vectors = sobs(x, y)
+def plot_separatrix(rhs, x, y, gamma):         # only one saddle => two separatrices
+  lambdas, vectors = sobs(x, y, gamma)
   v1= vectors[:, 0]           # first eigvector
   v2 = vectors[:, 1]          # second one
   h = 0.01                    # step
@@ -89,7 +91,6 @@ def plot_plane(rhs, limits): # draws a vector field
   plt.quiver(xs, ys, U, V, alpha = 0.8)
 
 
-
 # MAIN
 
 gamma = 0.
@@ -130,8 +131,44 @@ plt.plot(x6, y6, color = 'blue')
 
 sol7 = solve_ivp (rhs, t, (1.75, 0.), method = 'RK45', rtol = 1e-12)
 x7, y7 = sol7.y
-plt.plot(x7, y7, color = 'blue')
+plt.plot(x7, y7, color = 'blue') 
 
-sep1, sep2, sep3, sep4 = plot_separatrix(rhs, 0., 0.) # separatrices for central sadlle
+sep1, sep2, sep3, sep4 = plot_separatrix(rhs, 0., 0., gamma) # separatrices for central sadlle
+# plt.show()
 
+
+# temporary implementations x(t)
+
+plt.figure (figsize = (8, 6))
+
+# 1st cell: STATES OF EQUILIBRIUM
+plt.subplot (3, 1, 1)
+plt.axis([0, 5, -5, 5])
+plt.axhline(y = 0, color = 'blue')
+plt.axhline(y = -2, color = 'blue')
+plt.axhline(y = 1, color = 'blue') 
+plt.xlabel('t')
+plt.ylabel('x(t)')
+plt.title('States of equilibrium')
+
+
+# 2nd cell: CLOSED TRAJECTORIES
+plt.subplot(3, 1, 2)
+plt.axis([0, 10, -10, 10])
+plt.plot(sol01.t, sol01.y[0], color = 'green')
+plt.plot(sol02.t, sol02.y[0], color = 'green')
+plt.xlabel('t')
+plt.ylabel('x(t)')
+plt.title('Closed trajectories')
+
+# 3rd cell: DOUBLE LIMIT TRAJECTORIES
+plt.subplot(3, 1, 3)
+plt.axis([0, 10, -5, 3])
+plt.plot(sep1.t, sep1.y[0], color = 'red')
+plt.xlabel('t')
+plt.ylabel('x(t)')
+plt.title('Double Limit trajectory')
+
+
+plt.tight_layout()
 plt.show()
