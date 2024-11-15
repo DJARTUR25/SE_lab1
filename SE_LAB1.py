@@ -5,6 +5,8 @@ from scipy.integrate import solve_ivp
 def f1(gamma):
   def rhs(t, X):
     x,y = X
+    if (max(x,y) > 10000):
+      return
     return [y , -gamma*y-x**3-x**2+2*x]
   return rhs
 
@@ -93,7 +95,7 @@ def plot_plane(rhs, limits): # draws a vector field
 
 # MAIN
 
-gamma = 0.
+gamma = -2.
 rhs = f1(gamma)
 
 plot_plane(rhs, ([-4., 4.], [-4., 4.]))
@@ -105,7 +107,16 @@ plt.scatter(0, 0, color='red', marker = 'x')
 t = [0., 10.]
 t1 = [0., -10.]
 
-sol01_in = solve_ivp (rhs, t, (-2.5, 0.), method='RK45', rtol = 1e-12)         # left center
+
+
+
+# ===================================== WARNING!!! =========================================== #
+# this states of equilibrium ONLY for case with GAMMA = 0.0                                    #
+# for the rest of the cases, the types will be different!!!                                    #
+
+
+
+sol01_in = solve_ivp (rhs, t, (-2.5, 0.), method='RK45', rtol = 1e-12)         # left center (when gamma = 0.0)
 x01_in, y01_in = sol01_in.y
 plt.plot(x01_in, y01_in, color = 'green')
 
@@ -113,7 +124,7 @@ sol01_ag = solve_ivp (rhs, t1, (-2.5, 0.), method = 'RK45', rtol = 1e-12)
 x01_ag, y01_ag = sol01_ag.y
 plt.plot(x01_ag, y01_ag, color = 'green')
 
-sol02_in = solve_ivp (rhs, t, (1.2, 0.), method='RK45', rtol = 1e-12)          # right center
+sol02_in = solve_ivp (rhs, t, (1.2, 0.), method='RK45', rtol = 1e-12)          # right center (when gamma = 0.0)
 x02_in, y02_in = sol02_in.y
 plt.plot(x02_in, y02_in, color = 'green')
 
