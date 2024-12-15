@@ -95,7 +95,7 @@ def plot_plane(rhs, limits): # draws a vector field
 
 # MAIN
 
-gamma = -2.
+gamma = 2.
 rhs = f1(gamma)
 
 plot_plane(rhs, ([-4., 4.], [-4., 4.]))
@@ -179,10 +179,7 @@ sep1, sep2, sep3, sep4 = plot_separatrix(rhs, 0., 0., gamma) # separatrices for 
 # temporary implementations x(t)
 
 
-if (gamma != 0.):
-  plt.tight_layout()
-  plt.show()
-else: 
+if (gamma == 0.): 
   plt.figure (figsize = (8, 6))
 
   # 1st cell: STATES OF EQUILIBRIUM
@@ -198,7 +195,7 @@ else:
 
   # 2nd cell: CLOSED TRAJECTORIES
   plt.subplot(3, 1, 2)
-  plt.axis([0, 10, -10, 10])
+  plt.axis([-10, 10, -5, 5])
   plt.plot(sol01_in.t, sol01_in.y[0], color = 'green')
   plt.plot(sol02_in.t, sol02_in.y[0], color = 'green')
   plt.xlabel('t')
@@ -217,5 +214,43 @@ else:
   plt.ylabel('x(t)')
   plt.title('Double Limit trajectory')
   
+  plt.tight_layout()
+  plt.show()
+  
+else:
+  plt.figure (figsize = (8, 6))
+
+  # 1st cell: STATES OF EQUILIBRIUM
+  plt.subplot (3, 1, 1)
+  plt.axis([0, 5, -5, 5])
+  plt.axhline(y = 0, color = 'blue')
+  plt.axhline(y = -2, color = 'blue')
+  plt.axhline(y = 1, color = 'blue') 
+  plt.xlabel('t')
+  plt.ylabel('x(t)')
+  plt.title('States of equilibrium')
+
+
+  # 2nd cell: CLOSED TRAJECTORIES plt.xlim, plt.ylim
+  plt.subplot(3, 1, 2)
+  plt.xlim(-5, 5)
+  plt.plot(sol03_in.t, sol03_in.y[0], color = 'green')
+  plt.plot(sol03_ag.t, sol03_ag.y[0], color = 'green')
+  #plt.plot(sol02_in.t, sol02_in.y[0], color = 'green')
+  plt.xlabel('t')
+  plt.ylabel('x(t)')
+  plt.title('Former closed trajectories')
+
+  # 3rd cell: DOUBLE LIMIT TRAJECTORIES
+  plt.subplot(3, 1, 3)
+  plt.xlim(0, 20)
+
+  sol_dl2 = solve_ivp(rhs, [0., 100.], (-0.01, 0.), method = 'RK45', rtol = 1e-12)     # for right separatrix
+  x, y = sol_dl2.y
+  plt.plot (sol_dl2.t, sol_dl2.y[0], color = 'red')
+  plt.xlabel('t')
+  plt.ylabel('x(t)')
+  plt.title('Former double limit')
+
   plt.tight_layout()
   plt.show()
